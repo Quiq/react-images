@@ -4,10 +4,25 @@ import { css, StyleSheet } from 'aphrodite/no-important';
 
 import defaults from '../theme';
 import deepMerge from '../utils/deepMerge';
+import buildPropGetter from '../utils/buildPropGetter';
+import callAll from '../utils/callAll';
 
-function Thumbnail ({ index, src, thumbnail, active, onClick }, { theme }) {
+function Thumbnail ({ index, src, thumbnail, active, onClick, renderThumbnail }, { theme }) {
 	const url = thumbnail ? thumbnail : src;
 	const classes = StyleSheet.create(deepMerge(defaultStyles, theme));
+
+	const clickHandler = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onClick(index);
+  };
+
+	if (renderThumbnail) {
+		return renderThumbnail({ index, src, thumbnail, active }, buildPropGetter({
+			onClick: f => event => callAll([clickHandler, f], event.target, [event]),
+      className: className => `${className || ''} ${css(classes.thumbnail, active && classes.thumbnail__active)}`,
+  }));
+	}
 
 	return (
 		<div
@@ -26,7 +41,8 @@ Thumbnail.propTypes = {
 	active: PropTypes.bool,
 	index: PropTypes.number,
 	onClick: PropTypes.func.isRequired,
-	src: PropTypes.string,
+  renderThumbnail: PropTypes.func,
+  src: PropTypes.string,
 	thumbnail: PropTypes.string,
 };
 

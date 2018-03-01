@@ -1,6 +1,6 @@
 {
   "name": "react-images",
-  "version": "0.5.17",
+  "version": "0.5.17.1",
   "description": "A simple, responsive lightbox component for displaying an array of images with React.js",
   "main": "lib/Lightbox.js",
   "jsnext:main": "dist/react-images.es.js",
@@ -35,6 +35,7 @@
     "html-webpack-plugin": "^2.30.1",
     "less": "^3.0.0-alpha.3",
     "less-loader": "^4.0.5",
+    "nodemon": "^1.17.1",
     "nps": "^5.7.1",
     "nps-utils": "^1.4.0",
     "react": "^16.0.0",
@@ -57,7 +58,8 @@
     "build": "nps build",
     "publish:examples": "NODE_ENV=production nps publish",
     "start": "webpack-dev-server --progress",
-    "lint": "eslint src/** examples/src/app.js examples/src/components/Gallery.js"
+    "lint": "eslint src/** examples/src/app.js examples/src/components/Gallery.js",
+    "watch": "./node_modules/.bin/nodemon --watch src -e js,sass --exec npm run build"
   },
   "bugs": {
     "url": "https://github.com/jossmac/react-images/issues"

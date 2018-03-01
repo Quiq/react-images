@@ -147,7 +147,9 @@ export default class PaginatedThumbnails extends Component {
 						{...img}
 						index={baseOffset + idx}
 						onClick={onClickThumbnail}
-						active={baseOffset + idx === currentImage} />
+						active={baseOffset + idx === currentImage}
+						renderThumbnail={this.props.renderThumbnail}
+          />
 				))}
 				{this.renderArrowNext()}
 			</div>

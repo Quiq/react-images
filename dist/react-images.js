@@ -572,16 +572,52 @@ var defaultStyles$4 = {
 	}
 };
 
+function buildPropGetter(propertyBuilders) {
+  return function (customProps) {
+    var mergedProps = Object.assign({}, customProps);
+    Object.keys(propertyBuilders).forEach(function (k) {
+      mergedProps[k] = propertyBuilders[k](mergedProps[k]);
+    });
+    return mergedProps;
+  };
+}
+
+function callAll(arr, thisArg, args) {
+  arr.forEach(function (f) {
+    return f && f.apply(thisArg, args);
+  });
+}
+
 function Thumbnail(_ref, _ref2) {
 	var index = _ref.index,
 	    src = _ref.src,
 	    thumbnail = _ref.thumbnail,
 	    active = _ref.active,
-	    _onClick = _ref.onClick;
+	    _onClick = _ref.onClick,
+	    renderThumbnail = _ref.renderThumbnail;
 	var theme$$1 = _ref2.theme;
 
 	var url = thumbnail ? thumbnail : src;
 	var classes = noImportant.StyleSheet.create(deepMerge(defaultStyles$5, theme$$1));
+
+	var clickHandler = function clickHandler(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		_onClick(index);
+	};
+
+	if (renderThumbnail) {
+		return renderThumbnail({ index: index, src: src, thumbnail: thumbnail, active: active }, buildPropGetter({
+			onClick: function onClick(f) {
+				return function (event) {
+					return callAll([clickHandler, f], event.target, [event]);
+				};
+			},
+			className: function className(_className) {
+				return (_className || '') + ' ' + noImportant.css(classes.thumbnail, active && classes.thumbnail__active);
+			}
+		}));
+	}
 
 	return React__default.createElement('div', {
 		className: noImportant.css(classes.thumbnail, active && classes.thumbnail__active),
@@ -598,6 +634,7 @@ Thumbnail.propTypes = {
 	active: PropTypes.bool,
 	index: PropTypes.number,
 	onClick: PropTypes.func.isRequired,
+	renderThumbnail: PropTypes.func,
 	src: PropTypes.string,
 	thumbnail: PropTypes.string
 };
@@ -776,6 +813,8 @@ var PaginatedThumbnails = function (_Component) {
 	}, {
 		key: 'render',
 		value: function render$$1() {
+			var _this2 = this;
+
 			var _props4 = this.props,
 			    images = _props4.images,
 			    currentImage = _props4.currentImage,
@@ -803,7 +842,9 @@ var PaginatedThumbnails = function (_Component) {
 					}, img, {
 						index: baseOffset + idx,
 						onClick: onClickThumbnail,
-						active: baseOffset + idx === currentImage }));
+						active: baseOffset + idx === currentImage,
+						renderThumbnail: _this2.props.renderThumbnail
+					}));
 				}),
 				this.renderArrowNext()
 			);
@@ -1017,7 +1058,10 @@ var Lightbox = function (_Component) {
 
 		_this.theme = deepMerge(theme, props.theme);
 		_this.classes = aphrodite.StyleSheet.create(deepMerge(defaultStyles, _this.theme));
-		_this.state = { imageLoaded: false };
+		_this.state = {
+			// If a custom render function was provided, we'll let it deal with loading.
+			imageLoaded: !!props.renderImage
+		};
 
 		bindFunctions.call(_this, ['gotoNext', 'gotoPrev', 'closeBackdrop', 'handleKeyboardInput', 'handleImageLoaded']);
 		return _this;
@@ -1102,6 +1146,9 @@ var Lightbox = function (_Component) {
 			var data = this.props.images[idx];
 
 			if (!data) return;
+
+			// If a custom render function was provided, don't preload images ourselves
+			if (this.props.renderImage) return { complete: true };
 
 			var img = new Image();
 			var sourceSet = normalizeSourceSet(data);
@@ -1258,6 +1305,8 @@ var Lightbox = function (_Component) {
 	}, {
 		key: 'renderImages',
 		value: function renderImages() {
+			var _this2 = this;
+
 			var _props3 = this.props,
 			    currentImage = _props3.currentImage,
 			    images = _props3.images,
@@ -1278,7 +1327,14 @@ var Lightbox = function (_Component) {
 			return React__default.createElement(
 				'figure',
 				{ className: aphrodite.css(this.classes.figure) },
-				React__default.createElement('img', {
+				this.props.renderImage ? this.props.renderImage(image, buildPropGetter({
+					style: function style(_style) {
+						return Object.assign({}, _style, { maxHeight: 'calc(100vh - ' + heightOffset + ')' });
+					},
+					className: function className(_className) {
+						return (_className || '') + ' ' + aphrodite.css(_this2.classes.image, imageLoaded && _this2.classes.imageLoaded);
+					}
+				})) : React__default.createElement('img', {
 					className: aphrodite.css(this.classes.image, imageLoaded && this.classes.imageLoaded),
 					onClick: onClickImage,
 					sizes: sizes,
@@ -1309,7 +1365,8 @@ var Lightbox = function (_Component) {
 				currentImage: currentImage,
 				images: images,
 				offset: thumbnailOffset,
-				onClickThumbnail: onClickThumbnail
+				onClickThumbnail: onClickThumbnail,
+				renderThumbnail: this.props.renderThumbnail
 			});
 		}
 	}, {
@@ -1403,6 +1460,8 @@ Lightbox.propTypes = {
 	onClose: PropTypes.func.isRequired,
 	preloadNextImage: PropTypes.bool,
 	preventScroll: PropTypes.bool,
+	renderImage: PropTypes.func,
+	renderThumbnail: PropTypes.func,
 	rightArrowTitle: PropTypes.string,
 	showCloseButton: PropTypes.bool,
 	showImageCount: PropTypes.bool,

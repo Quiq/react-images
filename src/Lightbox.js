@@ -15,6 +15,7 @@ import DefaultSpinner from './components/Spinner';
 import bindFunctions from './utils/bindFunctions';
 import canUseDom from './utils/canUseDom';
 import deepMerge from './utils/deepMerge';
+import buildPropGetter from './utils/buildPropGetter';
 
 // consumers sometimes provide incorrect type or casing
 function normalizeSourceSet (data) {
@@ -33,7 +34,10 @@ class Lightbox extends Component {
 
 		this.theme = deepMerge(defaultTheme, props.theme);
 		this.classes = StyleSheet.create(deepMerge(defaultStyles, this.theme));
-		this.state = { imageLoaded: false };
+		this.state = {
+			// If a custom render function was provided, we'll let it deal with loading.
+			imageLoaded: !!props.renderImage
+		};
 
 		bindFunctions.call(this, [
 			'gotoNext',
@@ -112,6 +116,10 @@ class Lightbox extends Component {
 		const data = this.props.images[idx];
 
 		if (!data) return;
+
+		// If a custom render function was provided, don't preload images ourselves
+		if (this.props.renderImage)
+			return { complete: true };
 
 		const img = new Image();
 		const sourceSet = normalizeSourceSet(data);
@@ -271,18 +279,23 @@ class Lightbox extends Component {
 					https://fb.me/react-unknown-prop is resolved
 					<Swipeable onSwipedLeft={this.gotoNext} onSwipedRight={this.gotoPrev} />
 				*/}
-				<img
-					className={css(this.classes.image, imageLoaded && this.classes.imageLoaded)}
-					onClick={onClickImage}
-					sizes={sizes}
-					alt={image.alt}
-					src={image.src}
-					srcSet={sourceSet}
-					style={{
-						cursor: onClickImage ? 'pointer' : 'auto',
-						maxHeight: `calc(100vh - ${heightOffset})`,
-					}}
-				/>
+        {this.props.renderImage ? this.props.renderImage(image, buildPropGetter({
+						style: style => Object.assign({}, style, { maxHeight: `calc(100vh - ${heightOffset})` }),
+						className: className => `${className || ''} ${css(this.classes.image, imageLoaded && this.classes.imageLoaded)}`,
+					}))
+          : <img
+							className={css(this.classes.image, imageLoaded && this.classes.imageLoaded)}
+							onClick={onClickImage}
+							sizes={sizes}
+							alt={image.alt}
+							src={image.src}
+							srcSet={sourceSet}
+							style={{
+								cursor: onClickImage ? 'pointer' : 'auto',
+								maxHeight: `calc(100vh - ${heightOffset})`,
+							}}
+          />
+        }
 			</figure>
 		);
 	}
@@ -297,6 +310,7 @@ class Lightbox extends Component {
 				images={images}
 				offset={thumbnailOffset}
 				onClickThumbnail={onClickThumbnail}
+				renderThumbnail={this.props.renderThumbnail}
 			/>
 		);
 	}
@@ -388,6 +402,8 @@ Lightbox.propTypes = {
 	onClose: PropTypes.func.isRequired,
 	preloadNextImage: PropTypes.bool,
 	preventScroll: PropTypes.bool,
+	renderImage: PropTypes.func,
+	renderThumbnail: PropTypes.func,
 	rightArrowTitle: PropTypes.string,
 	showCloseButton: PropTypes.bool,
 	showImageCount: PropTypes.bool,
