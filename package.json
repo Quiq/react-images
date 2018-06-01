@@ -1,7 +1,8 @@
 {
   "name": "react-images",
-  "version": "0.5.17.1",
-  "description": "A simple, responsive lightbox component for displaying an array of images with React.js",
+  "version": "99.5.17",
+  "description":
+    "A simple, responsive lightbox component for displaying an array of images with React.js",
   "main": "lib/Lightbox.js",
   "jsnext:main": "dist/react-images.es.js",
   "author": "Joss Mackison",
